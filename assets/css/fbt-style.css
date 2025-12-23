@@ -1,5 +1,10 @@
 /* Frequently Bought Together Widget Styles */
 
+/* Ensure plugin styles don't affect WooCommerce cart */
+.fbt-widget-wrapper * {
+    box-sizing: border-box;
+}
+
 .fbt-widget-wrapper {
     width: 100%;
     max-width: 1200px;
