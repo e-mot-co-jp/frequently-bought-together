@@ -520,7 +520,11 @@ class FBT_Widget extends \Elementor\Widget_Base {
                                     </h4>
                                     <?php if ($settings['show_price'] === 'yes') : ?>
                                         <div class="fbt-product-price">
-                                            <?php echo $product->get_price_html(); ?>
+                                            <?php 
+                                            // Display price including tax
+                                            $price_incl_tax = wc_get_price_including_tax($product);
+                                            echo wc_price($price_incl_tax);
+                                            ?>
                                         </div>
                                     <?php endif; ?>
                                 </div>
