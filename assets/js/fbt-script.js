@@ -51,24 +51,25 @@ jQuery(document).ready(function($) {
          * Update total price and points
          */
         updateTotal() {
-            let total = 0;
+            let totalInclTax = 0;
             const selectedProducts = [];
             
             this.$checkboxes.each((index, checkbox) => {
                 const $checkbox = $(checkbox);
                 if ($checkbox.is(':checked')) {
-                    const price = parseFloat($checkbox.data('price')) || 0;
-                    total += price;
+                    // Use tax-included price
+                    const priceInclTax = parseFloat($checkbox.data('price-incl-tax')) || 0;
+                    totalInclTax += priceInclTax;
                     selectedProducts.push($checkbox.data('product-id'));
                 }
             });
             
-            // Update total amount
-            this.formatPrice(total, this.$totalAmount);
+            // Update total amount (tax included)
+            this.formatPrice(totalInclTax, this.$totalAmount);
             
-            // Update points (1% of total)
-            const points = Math.floor(total * 0.01);
-            if (this.$pointInfo.length) {
+            // Update points (1% of total) - only if point info element exists
+            if (this.$pointInfo.length && this.$pointInfo.is(':visible')) {
+                const points = Math.floor(totalInclTax * 0.01);
                 this.$pointInfo.text(`ポイントの合計: ${points}pt`);
             }
             

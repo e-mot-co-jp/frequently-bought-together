@@ -380,7 +380,7 @@ class FBT_Widget extends \Elementor\Widget_Base {
     }
 
     /**
-     * Get products for select2
+     * Get products for select2 (including variations)
      */
     protected function get_products_options() {
         $products = wc_get_products([
@@ -393,6 +393,18 @@ class FBT_Widget extends \Elementor\Widget_Base {
         $options = [];
         foreach ($products as $product) {
             $options[$product->get_id()] = $product->get_name() . ' (#' . $product->get_id() . ')';
+            
+            // Add variations if this is a variable product
+            if ($product->is_type('variable')) {
+                $variations = $product->get_available_variations();
+                foreach ($variations as $variation) {
+                    $variation_obj = wc_get_product($variation['variation_id']);
+                    if ($variation_obj) {
+                        $variation_name = $product->get_name() . ' - ' . implode(', ', $variation_obj->get_variation_attributes());
+                        $options[$variation['variation_id']] = $variation_name . ' (#' . $variation['variation_id'] . ')';
+                    }
+                }
+            }
         }
 
         return $options;
@@ -425,11 +437,23 @@ class FBT_Widget extends \Elementor\Widget_Base {
     protected function render() {
         $settings = $this->get_settings_for_display();
         $selected_products = $settings['selected_products'];
+        
+        // Get current product if we're on a product page
+        $current_product_id = get_the_ID();
+        $current_product = null;
+        if (is_product() && $current_product_id) {
+            $current_product = wc_get_product($current_product_id);
+        }
+        
+        // Add current product as first item if not already in the list
+        if ($current_product && !in_array($current_product_id, (array)$selected_products)) {
+            array_unshift($selected_products, $current_product_id);
+        }
 
         if (empty($selected_products)) {
             if (\Elementor\Plugin::$instance->editor->is_edit_mode()) {
                 echo '<div style="padding: 20px; text-align: center; background: #f0f0f0; border: 2px dashed #ccc;">';
-                echo __('商品を選択してください', 'frequently-bought-together');
+                echo __('商品を選択してください（商品ページでは自動的に現在の商品が追加されます）', 'frequently-bought-together');
                 echo '</div>';
             }
             return;
@@ -437,18 +461,25 @@ class FBT_Widget extends \Elementor\Widget_Base {
 
         $products = [];
         $total_price = 0;
+        $total_price_incl_tax = 0;
 
         foreach ($selected_products as $product_id) {
             $product = wc_get_product($product_id);
             if ($product) {
                 $products[] = $product;
-                $total_price += (float) $product->get_price();
+                $price = (float) $product->get_price();
+                $total_price += $price;
+                // Calculate price including tax
+                $total_price_incl_tax += (float) wc_get_price_including_tax($product);
             }
         }
 
         if (empty($products)) {
             return;
         }
+        
+        // Check if points plugin is active
+        $has_points = class_exists('WC_Points_Rewards') || function_exists('wc_points_rewards_get_points_label');
 
         ?>
         <div class="fbt-widget-wrapper">
@@ -464,7 +495,8 @@ class FBT_Widget extends \Elementor\Widget_Base {
                                    class="fbt-product-checkbox" 
                                    checked 
                                    data-product-id="<?php echo esc_attr($product->get_id()); ?>"
-                                   data-price="<?php echo esc_attr($product->get_price()); ?>">
+                                   data-price="<?php echo esc_attr($product->get_price()); ?>"
+                                   data-price-incl-tax="<?php echo esc_attr(wc_get_price_including_tax($product)); ?>">
                         </div>
                         
                         <?php if (!empty($settings['loop_template'])) : ?>
@@ -502,15 +534,19 @@ class FBT_Widget extends \Elementor\Widget_Base {
                 <?php if ($settings['show_total'] === 'yes') : ?>
                     <div class="fbt-total-price">
                         <span class="fbt-total-label"><?php echo __('合計:', 'frequently-bought-together'); ?></span>
-                        <span class="fbt-total-amount" data-total="<?php echo esc_attr($total_price); ?>">
-                            <?php echo wc_price($total_price); ?>
+                        <span class="fbt-total-amount" 
+                              data-total="<?php echo esc_attr($total_price); ?>"
+                              data-total-incl-tax="<?php echo esc_attr($total_price_incl_tax); ?>">
+                            <?php echo wc_price($total_price_incl_tax); ?>
                         </span>
-                        <span class="fbt-point-info">
-                            <?php 
-                            $points = floor($total_price * 0.01); // 1%ポイント
-                            printf(__('ポイントの合計: %dpt', 'frequently-bought-together'), $points);
-                            ?>
-                        </span>
+                        <?php if ($has_points) : ?>
+                            <span class="fbt-point-info">
+                                <?php 
+                                $points = floor($total_price_incl_tax * 0.01); // 1%ポイント
+                                printf(__('ポイントの合計: %dpt', 'frequently-bought-together'), $points);
+                                ?>
+                            </span>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
 
