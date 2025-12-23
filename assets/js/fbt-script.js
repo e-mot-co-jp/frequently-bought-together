@@ -24,11 +24,12 @@ jQuery(document).ready(function($) {
             // Add to cart button click event
             this.$addToCartBtn.on('click', () => this.handleAddToCart());
             
-            // Initial calculation
-            this.updateTotal();
-            
             // Add selected count badge if it doesn't exist
             this.addSelectedCountBadge();
+            
+            // Update selected count badge only (without recalculating price)
+            const selectedCount = this.$checkboxes.filter(':checked').length;
+            this.updateSelectedCount(selectedCount);
         }
 
         /**
