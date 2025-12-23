@@ -1,0 +1,34 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Log Files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build Files
+dist/
+build/
+*.min.css
+*.min.js
+
+# Temporary Files
+*.tmp
+*.temp
+*.cache
+
+# WordPress
+wp-config.php
+.htaccess
