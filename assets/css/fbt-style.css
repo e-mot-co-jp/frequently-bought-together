@@ -5,6 +5,36 @@
     box-sizing: border-box;
 }
 
+/* Explicitly prevent any interference with WooCommerce tables */
+.woocommerce table,
+.woocommerce-page table,
+.woocommerce table.shop_table,
+.woocommerce-cart-form__contents {
+    display: table !important;
+}
+
+.woocommerce table thead,
+.woocommerce-page table thead {
+    display: table-header-group !important;
+}
+
+.woocommerce table tbody,
+.woocommerce-page table tbody {
+    display: table-row-group !important;
+}
+
+.woocommerce table tr,
+.woocommerce-page table tr {
+    display: table-row !important;
+}
+
+.woocommerce table td,
+.woocommerce-page table td,
+.woocommerce table th,
+.woocommerce-page table th {
+    display: table-cell !important;
+}
+
 .fbt-widget-wrapper {
     width: 100%;
     max-width: 1200px;
