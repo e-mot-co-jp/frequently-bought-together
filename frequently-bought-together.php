@@ -102,11 +102,6 @@ class Frequently_Bought_Together {
     }
 
     public function enqueue_scripts() {
-        // Don't load on cart or checkout pages to avoid conflicts
-        if (is_cart() || is_checkout()) {
-            return;
-        }
-        
         wp_enqueue_style(
             'fbt-style',
             FBT_PLUGIN_URL . 'assets/css/fbt-style.css',
