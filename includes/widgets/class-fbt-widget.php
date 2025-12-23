@@ -151,7 +151,7 @@ class FBT_Widget extends \Elementor\Widget_Base {
                 ],
                 'default' => [
                     'unit' => 'px',
-                    'size' => 20,
+                    'size' => 40,
                 ],
                 'selectors' => [
                     '{{WRAPPER}} .fbt-products-grid' => 'gap: {{SIZE}}{{UNIT}};',
