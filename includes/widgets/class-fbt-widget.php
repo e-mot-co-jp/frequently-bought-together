@@ -591,7 +591,40 @@ class FBT_Widget extends \Elementor\Widget_Base {
                                 <div class="fbt-product-info">
                                     <h4 class="fbt-product-title">
                                         <a href="<?php echo esc_url($product->get_permalink()); ?>">
-                                            <?php echo esc_html($product->get_name()); ?>
+                                            <?php 
+                                            // Display product name with formatted variation attributes
+                                            if ($product->is_type('variation')) {
+                                                $parent_id = $product->get_parent_id();
+                                                $parent_product = wc_get_product($parent_id);
+                                                $parent_name = $parent_product ? $parent_product->get_name() : $product->get_name();
+                                                
+                                                // Get variation attributes with labels (not slugs)
+                                                $attributes = $product->get_variation_attributes();
+                                                $formatted_attributes = [];
+                                                foreach ($attributes as $attr_name => $attr_value) {
+                                                    // Get the taxonomy label
+                                                    $taxonomy = str_replace('attribute_', '', $attr_name);
+                                                    if (taxonomy_exists($taxonomy)) {
+                                                        $term = get_term_by('slug', $attr_value, $taxonomy);
+                                                        if ($term) {
+                                                            $formatted_attributes[] = $term->name;
+                                                        } else {
+                                                            $formatted_attributes[] = $attr_value;
+                                                        }
+                                                    } else {
+                                                        $formatted_attributes[] = ucfirst($attr_value);
+                                                    }
+                                                }
+                                                
+                                                if (!empty($formatted_attributes)) {
+                                                    echo esc_html($parent_name . ' - ' . implode(', ', $formatted_attributes));
+                                                } else {
+                                                    echo esc_html($product->get_name());
+                                                }
+                                            } else {
+                                                echo esc_html($product->get_name());
+                                            }
+                                            ?>
                                         </a>
                                     </h4>
                                     <?php if ($is_first_variable && !empty($first_product_variations)) : ?>
