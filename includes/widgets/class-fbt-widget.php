@@ -480,20 +480,38 @@ class FBT_Widget extends \Elementor\Widget_Base {
                         $variation = wc_get_product($variation_data['variation_id']);
                         if ($variation) {
                             // Get variation attributes with labels (not slugs)
-                            $attributes = $variation->get_variation_attributes();
                             $formatted_attributes = [];
-                            foreach ($attributes as $attr_name => $attr_value) {
-                                // Get the taxonomy label
-                                $taxonomy = str_replace('attribute_', '', $attr_name);
-                                if (taxonomy_exists($taxonomy)) {
-                                    $term = get_term_by('slug', $attr_value, $taxonomy);
-                                    if ($term) {
-                                        $formatted_attributes[] = $term->name;
+                            
+                            if (!empty($variation_data['attributes'])) {
+                                foreach ($variation_data['attributes'] as $attr_name => $attr_value) {
+                                    // Get the taxonomy label
+                                    $taxonomy = str_replace('attribute_', '', $attr_name);
+                                    if (taxonomy_exists($taxonomy)) {
+                                        $term = get_term_by('slug', $attr_value, $taxonomy);
+                                        if ($term) {
+                                            $formatted_attributes[] = $term->name;
+                                        } else {
+                                            $formatted_attributes[] = $attr_value;
+                                        }
                                     } else {
-                                        $formatted_attributes[] = $attr_value;
+                                        // For custom attributes, get options from parent product
+                                        $product_attributes = $product->get_attributes();
+                                        $attribute_name = str_replace('attribute_', '', $attr_name);
+                                        
+                                        $display_value = $attr_value;
+                                        if (isset($product_attributes[$attribute_name])) {
+                                            $attribute_obj = $product_attributes[$attribute_name];
+                                            $options = $attribute_obj->get_options();
+                                            // Find matching option (case-insensitive)
+                                            foreach ($options as $option) {
+                                                if (sanitize_title($option) === $attr_value) {
+                                                    $display_value = $option;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        $formatted_attributes[] = $display_value;
                                     }
-                                } else {
-                                    $formatted_attributes[] = ucfirst($attr_value);
                                 }
                             }
                             
