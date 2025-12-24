@@ -76,6 +76,36 @@
     flex: 1;
 }
 
+/* Variation Selector */
+.fbt-variation-selector {
+    margin-bottom: 12px;
+}
+
+.fbt-variation-select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.fbt-variation-select:hover {
+    border-color: #0071e3;
+}
+
+.fbt-variation-select:focus {
+    outline: none;
+    border-color: #0071e3;
+    box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.1);
+}
+
+.fbt-variation-select option:disabled {
+    color: #999;
+}
+
 /* Product Image */
 .fbt-product-image {
     width: 100%;

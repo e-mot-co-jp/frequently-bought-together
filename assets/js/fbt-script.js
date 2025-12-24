@@ -21,6 +21,9 @@ jQuery(document).ready(function($) {
             // Checkbox change event
             this.$checkboxes.on('change', (e) => this.handleCheckboxChange(e));
             
+            // Variation select change event
+            this.$wrapper.find('.fbt-variation-select').on('change', (e) => this.handleVariationChange(e));
+            
             // Add to cart button click event
             this.$addToCartBtn.on('click', () => this.handleAddToCart());
             
@@ -45,6 +48,31 @@ jQuery(document).ready(function($) {
                 $productItem.addClass('unchecked');
             }
             
+            this.updateTotal();
+        }
+
+        /**
+         * Handle variation select change
+         */
+        handleVariationChange(e) {
+            const $select = $(e.target);
+            const $option = $select.find('option:selected');
+            const variationId = $option.val();
+            const price = parseFloat($option.data('price')) || 0;
+            const priceInclTax = parseFloat($option.data('price-incl-tax')) || 0;
+            
+            // Update the product item's data-product-id
+            const $productItem = $select.closest('.fbt-product-item');
+            $productItem.attr('data-product-id', variationId);
+            
+            // Update the checkbox data
+            const $checkbox = $productItem.find('.fbt-product-checkbox');
+            $checkbox.attr('data-product-id', variationId);
+            $checkbox.data('product-id', variationId);
+            $checkbox.data('price', price);
+            $checkbox.data('price-incl-tax', priceInclTax);
+            
+            // Recalculate total
             this.updateTotal();
         }
 

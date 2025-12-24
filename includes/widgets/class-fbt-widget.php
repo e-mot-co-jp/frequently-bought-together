@@ -462,15 +462,70 @@ class FBT_Widget extends \Elementor\Widget_Base {
         $products = [];
         $total_price = 0;
         $total_price_incl_tax = 0;
+        $first_product_is_variable = false;
+        $first_product_variations = [];
+        $initial_variation_id = null;
 
-        foreach ($selected_products as $product_id) {
+        foreach ($selected_products as $index => $product_id) {
             $product = wc_get_product($product_id);
             if ($product) {
-                $products[] = $product;
-                $price = (float) $product->get_price();
-                $total_price += $price;
-                // Calculate price including tax
-                $total_price_incl_tax += (float) wc_get_price_including_tax($product);
+                // Check if first product is variable and get variations
+                if ($index === 0 && $product->is_type('variable')) {
+                    $first_product_is_variable = true;
+                    $available_variations = $product->get_available_variations();
+                    
+                    // Find initial variation: first in-stock or first available
+                    $has_out_of_stock = false;
+                    foreach ($available_variations as $variation_data) {
+                        $variation = wc_get_product($variation_data['variation_id']);
+                        if ($variation) {
+                            $first_product_variations[] = [
+                                'id' => $variation->get_id(),
+                                'name' => implode(', ', $variation->get_variation_attributes()),
+                                'price' => $variation->get_price(),
+                                'price_incl_tax' => wc_get_price_including_tax($variation),
+                                'in_stock' => $variation->is_in_stock()
+                            ];
+                            
+                            if (!$variation->is_in_stock()) {
+                                $has_out_of_stock = true;
+                            }
+                            
+                            // Set initial variation
+                            if ($initial_variation_id === null) {
+                                if ($has_out_of_stock) {
+                                    // If there are out-of-stock items, select first in-stock
+                                    if ($variation->is_in_stock()) {
+                                        $initial_variation_id = $variation->get_id();
+                                    }
+                                } else {
+                                    // All in stock, select first one
+                                    $initial_variation_id = $variation->get_id();
+                                }
+                            }
+                        }
+                    }
+                    
+                    // If no in-stock variation found, use first variation
+                    if ($initial_variation_id === null && !empty($first_product_variations)) {
+                        $initial_variation_id = $first_product_variations[0]['id'];
+                    }
+                    
+                    // Use initial variation for calculation
+                    if ($initial_variation_id) {
+                        $initial_variation = wc_get_product($initial_variation_id);
+                        $products[] = $initial_variation;
+                        $price = (float) $initial_variation->get_price();
+                        $total_price += $price;
+                        $total_price_incl_tax += (float) wc_get_price_including_tax($initial_variation);
+                    }
+                } else {
+                    $products[] = $product;
+                    $price = (float) $product->get_price();
+                    $total_price += $price;
+                    // Calculate price including tax
+                    $total_price_incl_tax += (float) wc_get_price_including_tax($product);
+                }
             }
         }
 
@@ -488,16 +543,36 @@ class FBT_Widget extends \Elementor\Widget_Base {
             <?php endif; ?>
 
             <div class="fbt-products-grid">
-                <?php foreach ($products as $product) : ?>
-                    <div class="fbt-product-item" data-product-id="<?php echo esc_attr($product->get_id()); ?>">
+                <?php foreach ($products as $index => $product) : 
+                    $is_first_variable = ($index === 0 && $first_product_is_variable);
+                    $current_product_id = $is_first_variable ? $initial_variation_id : $product->get_id();
+                ?>
+                    <div class="fbt-product-item" data-product-id="<?php echo esc_attr($current_product_id); ?>">
                         <div class="fbt-product-checkbox-wrapper">
                             <input type="checkbox" 
                                    class="fbt-product-checkbox" 
                                    checked 
-                                   data-product-id="<?php echo esc_attr($product->get_id()); ?>"
+                                   data-product-id="<?php echo esc_attr($current_product_id); ?>"
                                    data-price="<?php echo esc_attr($product->get_price()); ?>"
                                    data-price-incl-tax="<?php echo esc_attr(wc_get_price_including_tax($product)); ?>">
                         </div>
+                        
+                        <?php if ($is_first_variable && !empty($first_product_variations)) : ?>
+                        <div class="fbt-variation-selector">
+                            <select class="fbt-variation-select" data-parent-product-id="<?php echo esc_attr($selected_products[0]); ?>">
+                                <?php foreach ($first_product_variations as $var) : ?>
+                                    <option value="<?php echo esc_attr($var['id']); ?>"
+                                            data-price="<?php echo esc_attr($var['price']); ?>"
+                                            data-price-incl-tax="<?php echo esc_attr($var['price_incl_tax']); ?>"
+                                            <?php echo ($var['id'] == $initial_variation_id) ? 'selected' : ''; ?>
+                                            <?php echo !$var['in_stock'] ? 'disabled' : ''; ?>>
+                                        <?php echo esc_html($var['name']); ?>
+                                        <?php echo !$var['in_stock'] ? ' (在庫切れ)' : ''; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <?php endif; ?>
                         
                         <?php if (!empty($settings['loop_template'])) : ?>
                             <?php
