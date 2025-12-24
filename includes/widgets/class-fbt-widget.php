@@ -483,6 +483,9 @@ class FBT_Widget extends \Elementor\Widget_Base {
                             $attributes = $variation->get_variation_attributes();
                             $formatted_attributes = [];
                             foreach ($attributes as $attr_name => $attr_value) {
+                                // URLデコードして全角文字を正しく表示
+                                $attr_value = urldecode($attr_value);
+                                
                                 // Get the taxonomy label
                                 $taxonomy = str_replace('attribute_', '', $attr_name);
                                 if (taxonomy_exists($taxonomy)) {
@@ -602,6 +605,9 @@ class FBT_Widget extends \Elementor\Widget_Base {
                                                 $attributes = $product->get_variation_attributes();
                                                 $formatted_attributes = [];
                                                 foreach ($attributes as $attr_name => $attr_value) {
+                                                    // URLデコードして全角文字を正しく表示
+                                                    $attr_value = urldecode($attr_value);
+                                                    
                                                     // Get the taxonomy label
                                                     $taxonomy = str_replace('attribute_', '', $attr_name);
                                                     if (taxonomy_exists($taxonomy)) {
