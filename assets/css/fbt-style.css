@@ -78,7 +78,11 @@
 
 /* Variation Selector */
 .fbt-variation-selector {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+}
+
+.fbt-product-info .fbt-variation-selector {
+    margin: 0;
 }
 
 .fbt-variation-select {

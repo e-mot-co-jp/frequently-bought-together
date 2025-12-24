@@ -479,9 +479,27 @@ class FBT_Widget extends \Elementor\Widget_Base {
                     foreach ($available_variations as $variation_data) {
                         $variation = wc_get_product($variation_data['variation_id']);
                         if ($variation) {
+                            // Get variation attributes with labels (not slugs)
+                            $attributes = $variation->get_variation_attributes();
+                            $formatted_attributes = [];
+                            foreach ($attributes as $attr_name => $attr_value) {
+                                // Get the taxonomy label
+                                $taxonomy = str_replace('attribute_', '', $attr_name);
+                                if (taxonomy_exists($taxonomy)) {
+                                    $term = get_term_by('slug', $attr_value, $taxonomy);
+                                    if ($term) {
+                                        $formatted_attributes[] = $term->name;
+                                    } else {
+                                        $formatted_attributes[] = $attr_value;
+                                    }
+                                } else {
+                                    $formatted_attributes[] = ucfirst($attr_value);
+                                }
+                            }
+                            
                             $first_product_variations[] = [
                                 'id' => $variation->get_id(),
-                                'name' => implode(', ', $variation->get_variation_attributes()),
+                                'name' => implode(', ', $formatted_attributes),
                                 'price' => $variation->get_price(),
                                 'price_incl_tax' => wc_get_price_including_tax($variation),
                                 'in_stock' => $variation->is_in_stock()
@@ -557,23 +575,6 @@ class FBT_Widget extends \Elementor\Widget_Base {
                                    data-price-incl-tax="<?php echo esc_attr(wc_get_price_including_tax($product)); ?>">
                         </div>
                         
-                        <?php if ($is_first_variable && !empty($first_product_variations)) : ?>
-                        <div class="fbt-variation-selector">
-                            <select class="fbt-variation-select" data-parent-product-id="<?php echo esc_attr($selected_products[0]); ?>">
-                                <?php foreach ($first_product_variations as $var) : ?>
-                                    <option value="<?php echo esc_attr($var['id']); ?>"
-                                            data-price="<?php echo esc_attr($var['price']); ?>"
-                                            data-price-incl-tax="<?php echo esc_attr($var['price_incl_tax']); ?>"
-                                            <?php echo ($var['id'] == $initial_variation_id) ? 'selected' : ''; ?>
-                                            <?php echo !$var['in_stock'] ? 'disabled' : ''; ?>>
-                                        <?php echo esc_html($var['name']); ?>
-                                        <?php echo !$var['in_stock'] ? ' (在庫切れ)' : ''; ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <?php endif; ?>
-                        
                         <?php if (!empty($settings['loop_template'])) : ?>
                             <?php
                             // Use Elementor loop template
@@ -593,6 +594,22 @@ class FBT_Widget extends \Elementor\Widget_Base {
                                             <?php echo esc_html($product->get_name()); ?>
                                         </a>
                                     </h4>
+                                    <?php if ($is_first_variable && !empty($first_product_variations)) : ?>
+                                    <div class="fbt-variation-selector">
+                                        <select class="fbt-variation-select" data-parent-product-id="<?php echo esc_attr($selected_products[0]); ?>">
+                                            <?php foreach ($first_product_variations as $var) : ?>
+                                                <option value="<?php echo esc_attr($var['id']); ?>"
+                                                        data-price="<?php echo esc_attr($var['price']); ?>"
+                                                        data-price-incl-tax="<?php echo esc_attr($var['price_incl_tax']); ?>"
+                                                        <?php echo ($var['id'] == $initial_variation_id) ? 'selected' : ''; ?>
+                                                        <?php echo !$var['in_stock'] ? 'disabled' : ''; ?>>
+                                                    <?php echo esc_html($var['name']); ?>
+                                                    <?php echo !$var['in_stock'] ? ' (在庫切れ)' : ''; ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <?php endif; ?>
                                     <?php if ($settings['show_price'] === 'yes') : ?>
                                         <div class="fbt-product-price">
                                             <?php 
