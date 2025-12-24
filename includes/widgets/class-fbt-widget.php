@@ -411,58 +411,6 @@ class FBT_Widget extends \Elementor\Widget_Base {
     }
 
     /**
-     * Format variation product name with attribute labels (not slugs)
-     */
-    protected function get_formatted_variation_name($variation, $parent_product) {
-        if (!$variation || !$variation->is_type('variation')) {
-            return $variation ? $variation->get_name() : '';
-        }
-        
-        $parent_name = $parent_product->get_name();
-        $formatted_attributes = [];
-        
-        // Get variation attributes
-        $attributes = $variation->get_variation_attributes();
-        
-        foreach ($attributes as $attr_name => $attr_value) {
-            $taxonomy = str_replace('attribute_', '', $attr_name);
-            
-            if (taxonomy_exists($taxonomy)) {
-                $term = get_term_by('slug', $attr_value, $taxonomy);
-                if ($term) {
-                    $formatted_attributes[] = $term->name;
-                } else {
-                    $formatted_attributes[] = $attr_value;
-                }
-            } else {
-                // For custom attributes, get options from parent product
-                $product_attributes = $parent_product->get_attributes();
-                $attribute_name = str_replace('attribute_', '', $attr_name);
-                
-                $display_value = $attr_value;
-                if (isset($product_attributes[$attribute_name])) {
-                    $attribute_obj = $product_attributes[$attribute_name];
-                    $options = $attribute_obj->get_options();
-                    // Find matching option
-                    foreach ($options as $option) {
-                        if (sanitize_title($option) === $attr_value) {
-                            $display_value = $option;
-                            break;
-                        }
-                    }
-                }
-                $formatted_attributes[] = $display_value;
-            }
-        }
-        
-        if (!empty($formatted_attributes)) {
-            return $parent_name . ' - ' . implode(', ', $formatted_attributes);
-        }
-        
-        return $parent_name;
-    }
-
-    /**
      * Get Elementor loop templates
      */
     protected function get_loop_templates() {
@@ -512,13 +460,11 @@ class FBT_Widget extends \Elementor\Widget_Base {
         }
 
         $products = [];
-        $product_display_names = []; // Store formatted names
         $total_price = 0;
         $total_price_incl_tax = 0;
         $first_product_is_variable = false;
         $first_product_variations = [];
         $initial_variation_id = null;
-        $parent_products = []; // Store parent products for variation name formatting
 
         foreach ($selected_products as $index => $product_id) {
             $product = wc_get_product($product_id);
@@ -534,38 +480,20 @@ class FBT_Widget extends \Elementor\Widget_Base {
                         $variation = wc_get_product($variation_data['variation_id']);
                         if ($variation) {
                             // Get variation attributes with labels (not slugs)
+                            $attributes = $variation->get_variation_attributes();
                             $formatted_attributes = [];
-                            
-                            if (!empty($variation_data['attributes'])) {
-                                foreach ($variation_data['attributes'] as $attr_name => $attr_value) {
-                                    // Get the taxonomy label
-                                    $taxonomy = str_replace('attribute_', '', $attr_name);
-                                    if (taxonomy_exists($taxonomy)) {
-                                        $term = get_term_by('slug', $attr_value, $taxonomy);
-                                        if ($term) {
-                                            $formatted_attributes[] = $term->name;
-                                        } else {
-                                            $formatted_attributes[] = $attr_value;
-                                        }
+                            foreach ($attributes as $attr_name => $attr_value) {
+                                // Get the taxonomy label
+                                $taxonomy = str_replace('attribute_', '', $attr_name);
+                                if (taxonomy_exists($taxonomy)) {
+                                    $term = get_term_by('slug', $attr_value, $taxonomy);
+                                    if ($term) {
+                                        $formatted_attributes[] = $term->name;
                                     } else {
-                                        // For custom attributes, get options from parent product
-                                        $product_attributes = $product->get_attributes();
-                                        $attribute_name = str_replace('attribute_', '', $attr_name);
-                                        
-                                        $display_value = $attr_value;
-                                        if (isset($product_attributes[$attribute_name])) {
-                                            $attribute_obj = $product_attributes[$attribute_name];
-                                            $options = $attribute_obj->get_options();
-                                            // Find matching option (case-insensitive)
-                                            foreach ($options as $option) {
-                                                if (sanitize_title($option) === $attr_value) {
-                                                    $display_value = $option;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        $formatted_attributes[] = $display_value;
+                                        $formatted_attributes[] = $attr_value;
                                     }
+                                } else {
+                                    $formatted_attributes[] = ucfirst($attr_value);
                                 }
                             }
                             
@@ -605,16 +533,12 @@ class FBT_Widget extends \Elementor\Widget_Base {
                     if ($initial_variation_id) {
                         $initial_variation = wc_get_product($initial_variation_id);
                         $products[] = $initial_variation;
-                        $parent_products[] = $product; // Store parent for name formatting
-                        $product_display_names[] = $this->get_formatted_variation_name($initial_variation, $product);
                         $price = (float) $initial_variation->get_price();
                         $total_price += $price;
                         $total_price_incl_tax += (float) wc_get_price_including_tax($initial_variation);
                     }
                 } else {
                     $products[] = $product;
-                    $parent_products[] = null; // Not a variation
-                    $product_display_names[] = $product->get_name();
                     $price = (float) $product->get_price();
                     $total_price += $price;
                     // Calculate price including tax
@@ -667,7 +591,7 @@ class FBT_Widget extends \Elementor\Widget_Base {
                                 <div class="fbt-product-info">
                                     <h4 class="fbt-product-title">
                                         <a href="<?php echo esc_url($product->get_permalink()); ?>">
-                                            <?php echo esc_html($product_display_names[$index]); ?>
+                                            <?php echo esc_html($product->get_name()); ?>
                                         </a>
                                     </h4>
                                     <?php if ($is_first_variable && !empty($first_product_variations)) : ?>
